@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>Korean Flash Cards</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.svg">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Home Screen -->
+        <div id="screen-home" class="screen active">
+            <h1>🇰🇷 한국어</h1>
+            <p class="subtitle">Korean Flash Cards</p>
+            <div id="stats-summary">
+                <div class="stat-box">
+                    <span class="stat-number" id="due-count">0</span>
+                    <span class="stat-label">Due Today</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-number" id="learned-count">0</span>
+                    <span class="stat-label">Learned</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-number" id="streak-count">0</span>
+                    <span class="stat-label">Day Streak</span>
+                </div>
+            </div>
+            <button id="btn-study" class="btn-primary">Study Now</button>
+            <button id="btn-quiz" class="btn-secondary">🎯 Quiz Mode</button>
+            <button id="btn-decks" class="btn-secondary">My Cards</button>
+            <button id="btn-stats" class="btn-secondary">Progress</button>
+        </div>
+
+        <!-- Study Mode Menu -->
+        <div id="screen-study-menu" class="screen">
+            <div class="study-header">
+                <button class="btn-back" id="btn-back-study-menu">←</button>
+                <span>Study Mode</span>
+                <span></span>
+            </div>
+            <div class="mode-list">
+                <button id="btn-study-normal" class="mode-btn">
+                    <span class="mode-icon">📖</span>
+                    <span class="mode-name">Normal</span>
+                    <span class="mode-desc">Korean → English (classic flashcard)</span>
+                </button>
+                <button id="btn-study-reverse" class="mode-btn">
+                    <span class="mode-icon">🔄</span>
+                    <span class="mode-name">Reverse</span>
+                    <span class="mode-desc">English → Korean (recall practice)</span>
+                </button>
+                <button id="btn-study-listening" class="mode-btn">
+                    <span class="mode-icon">🎧</span>
+                    <span class="mode-name">Listening</span>
+                    <span class="mode-desc">Hear Korean → guess the meaning</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Study Screen -->
+        <div id="screen-study" class="screen">
+            <div class="study-header">
+                <button class="btn-back" id="btn-back-study">←</button>
+                <span id="cards-remaining">0 remaining</span>
+                <span id="session-score"></span>
+            </div>
+            <div id="card-container">
+                <div id="flashcard" class="flashcard">
+                    <div class="card-front">
+                        <button id="btn-play-audio" class="btn-audio hidden">🔊</button>
+                        <span class="card-korean" id="card-front-text"></span>
+                        <span class="card-hint" id="card-romanization"></span>
+                    </div>
+                    <div class="card-back">
+                        <span class="card-english" id="card-back-text"></span>
+                        <span class="card-example" id="card-example"></span>
+                    </div>
+                </div>
+            </div>
+            <p id="tap-hint" class="tap-hint">Tap card to flip</p>
+            <div id="rating-buttons" class="rating-buttons hidden">
+                <button class="btn-rating btn-again" data-rating="1">Again</button>
+                <button class="btn-rating btn-hard" data-rating="2">Hard</button>
+                <button class="btn-rating btn-good" data-rating="3">Good</button>
+                <button class="btn-rating btn-easy" data-rating="4">Easy</button>
+            </div>
+        </div>
+
+        <!-- Decks Screen -->
+        <div id="screen-decks" class="screen">
+            <div class="study-header">
+                <button class="btn-back" id="btn-back-decks">←</button>
+                <span>My Cards</span>
+                <span></span>
+            </div>
+            <button id="btn-add" class="btn-primary" style="margin-bottom: 16px; padding: 12px 24px; font-size: 0.95rem;">+ Add Card</button>
+            <div id="deck-list" class="deck-list"></div>
+        </div>
+
+        <!-- Quiz Menu Screen -->
+        <div id="screen-quiz-menu" class="screen">
+            <div class="study-header">
+                <button class="btn-back" id="btn-back-quiz-menu">←</button>
+                <span>Quiz Mode</span>
+                <span></span>
+            </div>
+            <div class="quiz-menu">
+                <div class="quiz-option" id="btn-quiz-mcq">
+                    <div class="quiz-option-icon">🎯</div>
+                    <div class="quiz-option-text">
+                        <div class="quiz-option-title">Multiple Choice</div>
+                        <div class="quiz-option-desc">Match the Korean word to its English meaning</div>
+                    </div>
+                </div>
+                <div class="quiz-option" id="btn-quiz-type">
+                    <div class="quiz-option-icon">⌨️</div>
+                    <div class="quiz-option-text">
+                        <div class="quiz-option-title">Type the Answer</div>
+                        <div class="quiz-option-desc">See the English, type the Korean word</div>
+                    </div>
+                </div>
+                <div class="quiz-option" id="btn-quiz-listening">
+                    <div class="quiz-option-icon">🎧</div>
+                    <div class="quiz-option-text">
+                        <div class="quiz-option-title">Listening</div>
+                        <div class="quiz-option-desc">Hear the Korean word, pick the meaning</div>
+                    </div>
+                </div>
+                <div class="quiz-option" id="btn-quiz-survival">
+                    <div class="quiz-option-icon">🔥</div>
+                    <div class="quiz-option-text">
+                        <div class="quiz-option-title">Survival Mode</div>
+                        <div class="quiz-option-desc">How far can you go? One mistake and it's over!</div>
+                    </div>
+                </div>
+                <div id="high-score-display" class="high-score-display"></div>
+            </div>
+        </div>
+
+        <!-- Quiz Play Screen -->
+        <div id="screen-quiz" class="screen">
+            <div class="study-header">
+                <button class="btn-back" id="btn-back-quiz">←</button>
+                <span id="quiz-progress">1 / 10</span>
+                <span id="quiz-score">0 ✓</span>
+            </div>
+            <div class="quiz-content">
+                <div id="quiz-prompt" class="quiz-prompt"></div>
+                <button id="quiz-play-audio" class="btn-audio hidden">🔊</button>
+                <div id="quiz-mcq-options" class="quiz-mcq-options hidden"></div>
+                <div id="quiz-type-input" class="quiz-type-input hidden">
+                    <input type="text" id="quiz-answer-input" placeholder="Type Korean here..." autocomplete="off" autocapitalize="off" spellcheck="false">
+                    <button id="quiz-submit-btn" class="btn-primary">Check</button>
+                </div>
+                <div id="quiz-feedback" class="quiz-feedback hidden"></div>
+                <button id="quiz-next-btn" class="btn-secondary quiz-next hidden">Next →</button>
+            </div>
+        </div>
+
+        <!-- Quiz Results Screen -->
+        <div id="screen-quiz-results" class="screen">
+            <div class="complete-content">
+                <h2 id="quiz-results-title">🎯 Quiz Complete!</h2>
+                <div id="quiz-results-score" class="quiz-results-score"></div>
+                <div id="quiz-results-detail" class="quiz-results-detail"></div>
+                <button id="btn-quiz-retry" class="btn-primary">Try Again</button>
+                <button id="btn-quiz-home" class="btn-secondary">Back to Home</button>
+            </div>
+        </div>
+
+        <!-- Manage Cards Screen -->
+        <div id="screen-manage" class="screen">
+            <div class="study-header">
+                <button class="btn-back" id="btn-back-manage">←</button>
+                <span id="manage-title">Cards</span>
+                <span></span>
+            </div>
+            <div id="card-list" class="card-list"></div>
+        </div>
+
+        <!-- Edit Card Screen -->
+        <div id="screen-edit" class="screen">
+            <div class="study-header">
+                <button class="btn-back" id="btn-back-edit">←</button>
+                <span>Edit Card</span>
+                <span></span>
+            </div>
+            <form id="edit-card-form" class="add-card-form">
+                <input type="hidden" id="edit-card-id">
+                <input type="hidden" id="edit-card-deck">
+                <div class="form-group">
+                    <label for="edit-korean">Korean *</label>
+                    <input type="text" id="edit-korean" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="edit-english">English *</label>
+                    <input type="text" id="edit-english" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="edit-romanization">Romanization</label>
+                    <input type="text" id="edit-romanization" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="edit-example">Example Sentence</label>
+                    <input type="text" id="edit-example" autocomplete="off">
+                </div>
+                <button type="submit" class="btn-primary">Save Changes</button>
+            </form>
+        </div>
+
+        <!-- Stats Screen -->
+        <div id="screen-stats" class="screen">
+            <div class="study-header">
+                <button class="btn-back" id="btn-back-stats">←</button>
+                <span>Progress</span>
+                <span></span>
+            </div>
+            <div id="stats-detail" class="stats-detail"></div>
+            <div class="backup-section">
+                <h3 class="backup-title">Backup & Restore</h3>
+                <div class="backup-buttons">
+                    <button id="btn-export" class="btn-secondary btn-small">Export Data</button>
+                    <label class="btn-secondary btn-small" for="import-file">Import Data</label>
+                    <input type="file" id="import-file" accept=".json" hidden>
+                </div>
+                <div id="import-status" class="import-status hidden"></div>
+            </div>
+        </div>
+
+        <!-- Add Card Screen -->
+        <div id="screen-add" class="screen">
+            <div class="study-header">
+                <button class="btn-back" id="btn-back-add">←</button>
+                <span>Add New Card</span>
+                <span></span>
+            </div>
+            <form id="add-card-form" class="add-card-form">
+                <div class="form-group">
+                    <label for="input-korean">Korean *</label>
+                    <input type="text" id="input-korean" placeholder="e.g. 사랑" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="input-english">English *</label>
+                    <input type="text" id="input-english" placeholder="e.g. Love" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="input-romanization">Romanization</label>
+                    <input type="text" id="input-romanization" placeholder="e.g. sarang" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="input-example">Example Sentence</label>
+                    <input type="text" id="input-example" placeholder="e.g. 사랑해요" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="input-deck">Deck</label>
+                    <select id="input-deck">
+                        <option value="custom">My Cards</option>
+                        <option value="__new__">+ Create New Deck</option>
+                    </select>
+                </div>
+                <div class="form-group hidden" id="new-deck-group">
+                    <label for="input-new-deck">New Deck Name</label>
+                    <input type="text" id="input-new-deck" placeholder="e.g. Travel Phrases" autocomplete="off">
+                </div>
+                <button type="submit" class="btn-primary">Add Card</button>
+            </form>
+            <div id="add-card-success" class="add-success hidden">✓ Card added!</div>
+        </div>
+
+        <!-- Session Complete Screen -->
+        <div id="screen-complete" class="screen">
+            <div class="complete-content">
+                <h2>🎉 Session Complete!</h2>
+                <div id="session-results"></div>
+                <button id="btn-home" class="btn-primary">Back to Home</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="srs.js"></script>
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('SW registered'))
+                .catch(err => console.log('SW registration failed:', err));
+        }
+    </script>
+</body>
+</html>
