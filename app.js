@@ -1082,7 +1082,7 @@
             </div>
             ${renderCalendar(stats.studyDates)}
             <div class="stats-card">
-                <h3>Total Reviews</h3>
+                <h3>Total Reviews <span class="info-btn" onclick="alert('Total Reviews counts every card you rate (Again, Hard, Good, or Easy) during study sessions.\\n\\nIt includes partial sessions — if you leave early, cards already reviewed still count.\\n\\nQuiz answers are NOT included in this count.')">ⓘ</span></h3>
                 <div class="value">${stats.totalReviews}</div>
             </div>
             <div class="stats-card">
@@ -1338,6 +1338,20 @@
 
         // Back buttons
         document.getElementById('btn-back-study').addEventListener('click', () => {
+            // Save partial session stats if any reviews were done
+            const totalReviewed = state.sessionStats.again + state.sessionStats.hard +
+                                  state.sessionStats.good + state.sessionStats.easy;
+            if (totalReviewed > 0 && state.currentCardIndex < state.studyQueue.length) {
+                const stats = Storage.getStats();
+                const today = new Date().toISOString().split('T')[0];
+                stats.totalReviews += totalReviewed;
+                if (!stats.dailyReviews[today]) stats.dailyReviews[today] = 0;
+                stats.dailyReviews[today] += totalReviewed;
+                if (!stats.studyDates) stats.studyDates = [];
+                if (!stats.studyDates.includes(today)) stats.studyDates.push(today);
+                updateDailyStreak(stats);
+                Storage.saveStats(stats);
+            }
             if (state.returnToDeck) {
                 showManageCards(state.returnToDeck);
                 state.returnToDeck = null;

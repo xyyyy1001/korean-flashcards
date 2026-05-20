@@ -623,6 +623,13 @@ body {
     margin-bottom: 8px;
 }
 
+.info-btn {
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--accent);
+    margin-left: 4px;
+}
+
 .stats-card .value {
     font-size: 2rem;
     font-weight: 700;
