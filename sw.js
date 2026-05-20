@@ -1,15 +1,15 @@
 // Service Worker for offline support
-const CACHE_NAME = 'korean-flashcards-v1';
+const CACHE_NAME = 'korean-flashcards-v2';
 const ASSETS = [
-    '/',
-    '/index.html',
-    '/style.css',
-    '/app.js',
-    '/srs.js',
-    '/data.js',
-    '/manifest.json',
-    '/icons/icon-192.svg',
-    '/icons/icon-512.svg',
+    './',
+    './index.html',
+    './style.css',
+    './app.js',
+    './srs.js',
+    './data.js',
+    './manifest.json',
+    './icons/icon-192.svg',
+    './icons/icon-512.svg',
 ];
 
 // Install — cache all assets

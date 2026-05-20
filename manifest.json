@@ -2,10 +2,10 @@
     "name": "Korean Flash Cards",
     "short_name": "한국어 Cards",
     "description": "Learn Korean vocabulary with spaced repetition flash cards",
-    "start_url": "/",
+    "start_url": ".",
     "display": "standalone",
-    "background_color": "#1a1a2e",
-    "theme_color": "#1a1a2e",
+    "background_color": "#2b2d42",
+    "theme_color": "#2b2d42",
     "orientation": "portrait",
     "icons": [
         {
