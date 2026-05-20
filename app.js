@@ -273,7 +273,16 @@
         const stats = Storage.getStats();
         const today = new Date().toISOString().split('T')[0];
 
-        if (stats.lastStudyDate === today) return; // Already counted today
+        // Track study dates for calendar
+        if (!stats.studyDates) stats.studyDates = [];
+        if (!stats.studyDates.includes(today)) {
+            stats.studyDates.push(today);
+        }
+
+        if (stats.lastStudyDate === today) {
+            Storage.saveStats(stats);
+            return;
+        }
 
         const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
         if (stats.lastStudyDate === yesterday || !stats.lastStudyDate) {
@@ -329,6 +338,11 @@
     function showDecks() {
         const deckList = document.getElementById('deck-list');
         const builtInDecks = VOCABULARY_DATA.decks;
+
+        // Reset search
+        document.getElementById('global-search-input').value = '';
+        document.getElementById('global-search-results').style.display = 'none';
+        deckList.style.display = '';
 
         // Gather all unique decks (built-in + custom)
         const allDeckIds = [...new Set(state.allCards.map(c => c.deckId))];
@@ -388,6 +402,57 @@
         showScreen('screen-decks');
     }
 
+    function globalSearch(query) {
+        const resultsContainer = document.getElementById('global-search-results');
+        const deckList = document.getElementById('deck-list');
+
+        if (!query || !query.trim()) {
+            resultsContainer.style.display = 'none';
+            deckList.style.display = '';
+            return;
+        }
+
+        const q = query.trim().toLowerCase();
+        const matches = state.allCards.filter(c =>
+            c.korean.toLowerCase().includes(q) ||
+            c.english.toLowerCase().includes(q) ||
+            (c.romanization && c.romanization.toLowerCase().includes(q))
+        );
+
+        deckList.style.display = 'none';
+        resultsContainer.style.display = 'flex';
+
+        if (matches.length === 0) {
+            resultsContainer.innerHTML = '<p style="color: var(--text-secondary); text-align: center; margin-top: 40px;">No cards found</p>';
+            return;
+        }
+
+        resultsContainer.innerHTML = matches.map(card => {
+            const status = getCardStatus(card);
+            return `
+            <div class="card-list-item" data-card-id="${card.id}">
+                <div class="card-list-info">
+                    <div class="card-list-korean">${card.korean}</div>
+                    <div class="card-list-english">${card.english}</div>
+                    <div class="card-list-meta">
+                        <span class="card-status ${status.class}">${status.label}</span>
+                    </div>
+                </div>
+                <div class="card-list-actions">
+                    <button class="btn-edit" data-edit-id="${card.id}">Edit</button>
+                </div>
+            </div>
+        `;
+        }).join('');
+
+        // Bind edit buttons in search results
+        resultsContainer.querySelectorAll('.btn-edit').forEach(btn => {
+            btn.addEventListener('click', () => {
+                showEditCard(btn.dataset.editId);
+            });
+        });
+    }
+
     function deleteDeck(deckId) {
         const deckCards = state.allCards.filter(c => c.deckId === deckId);
         if (!confirm(`Delete this deck and all ${deckCards.length} cards in it?`)) return;
@@ -398,22 +463,36 @@
     }
 
     // ==================== Manage Cards Screen ====================
+    let currentManageDeck = null;
+
     function showManageCards(deckId) {
+        currentManageDeck = deckId;
         const deckCards = state.allCards.filter(c => c.deckId === deckId);
         const deckName = deckCards[0]?.deckName || 'Cards';
 
         document.getElementById('manage-title').textContent = deckName;
+        document.getElementById('card-search-input').value = '';
 
         renderCardList(deckId);
         showScreen('screen-manage');
     }
 
-    function renderCardList(deckId) {
-        const deckCards = state.allCards.filter(c => c.deckId === deckId);
+    function renderCardList(deckId, searchQuery) {
+        let deckCards = state.allCards.filter(c => c.deckId === deckId);
         const cardList = document.getElementById('card-list');
 
+        // Filter by search query
+        if (searchQuery && searchQuery.trim()) {
+            const q = searchQuery.trim().toLowerCase();
+            deckCards = deckCards.filter(c =>
+                c.korean.toLowerCase().includes(q) ||
+                c.english.toLowerCase().includes(q) ||
+                (c.romanization && c.romanization.toLowerCase().includes(q))
+            );
+        }
+
         if (deckCards.length === 0) {
-            cardList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; margin-top: 40px;">No cards in this deck</p>';
+            cardList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; margin-top: 40px;">No cards found</p>';
             return;
         }
 
@@ -925,6 +1004,44 @@
     }
 
     // ==================== Stats Screen ====================
+    function renderCalendar(studyDates) {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const monthName = today.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+        const dates = studyDates || [];
+
+        let html = `<div class="stats-card">
+            <h3>📅 ${monthName}</h3>
+            <div class="calendar">
+                <div class="cal-header">
+                    <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                </div>
+                <div class="cal-grid">`;
+
+        // Empty cells for days before the 1st
+        for (let i = 0; i < firstDay; i++) {
+            html += `<span class="cal-day empty"></span>`;
+        }
+
+        // Days of the month
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const isStudied = dates.includes(dateStr);
+            const isToday = d === today.getDate();
+            let classes = 'cal-day';
+            if (isStudied) classes += ' studied';
+            if (isToday) classes += ' today';
+            html += `<span class="${classes}">${d}</span>`;
+        }
+
+        html += `</div></div></div>`;
+        return html;
+    }
+
     function showStats() {
         const stats = Storage.getStats();
         const cards = state.allCards;
@@ -963,6 +1080,7 @@
                 <h3>Study Streak</h3>
                 <div class="value">${stats.streak} days</div>
             </div>
+            ${renderCalendar(stats.studyDates)}
             <div class="stats-card">
                 <h3>Total Reviews</h3>
                 <div class="value">${stats.totalReviews}</div>
@@ -1232,6 +1350,9 @@
             showScreen('screen-home');
             updateHomeStats();
         });
+        document.getElementById('global-search-input').addEventListener('input', (e) => {
+            globalSearch(e.target.value);
+        });
         document.getElementById('btn-back-stats').addEventListener('click', () => {
             showScreen('screen-home');
         });
@@ -1240,6 +1361,11 @@
         });
         document.getElementById('btn-back-manage').addEventListener('click', () => {
             showDecks();
+        });
+        document.getElementById('card-search-input').addEventListener('input', (e) => {
+            if (currentManageDeck) {
+                renderCardList(currentManageDeck, e.target.value);
+            }
         });
         document.getElementById('btn-back-edit').addEventListener('click', () => {
             const deckId = document.getElementById('edit-card-deck').value;

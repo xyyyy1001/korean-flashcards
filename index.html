@@ -94,8 +94,12 @@
                 <span>My Cards</span>
                 <span></span>
             </div>
-            <button id="btn-add" class="btn-primary" style="margin-bottom: 16px; padding: 12px 24px; font-size: 0.95rem;">+ Add Card</button>
+            <div class="search-bar">
+                <input type="text" id="global-search-input" placeholder="Search Korean or English..." autocomplete="off" autocapitalize="off" spellcheck="false">
+            </div>
+            <div id="global-search-results" class="card-list" style="display:none;"></div>
             <div id="deck-list" class="deck-list"></div>
+            <button id="btn-add" class="fab">+</button>
         </div>
 
         <!-- Quiz Menu Screen -->
@@ -175,6 +179,9 @@
                 <button class="btn-back" id="btn-back-manage">←</button>
                 <span id="manage-title">Cards</span>
                 <span></span>
+            </div>
+            <div class="search-bar">
+                <input type="text" id="card-search-input" placeholder="Search Korean or English..." autocomplete="off" autocapitalize="off" spellcheck="false">
             </div>
             <div id="card-list" class="card-list"></div>
         </div>
