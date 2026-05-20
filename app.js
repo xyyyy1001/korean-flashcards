@@ -195,15 +195,7 @@
             document.getElementById('card-romanization').textContent = '';
             document.getElementById('card-back-text').textContent = card.korean;
             document.getElementById('card-example').textContent = card.romanization || '';
-            audioBtn.classList.add('hidden');
-        } else if (state.studyMode === 'listening') {
-            // Hide text, show audio button
-            document.getElementById('card-front-text').textContent = '';
-            document.getElementById('card-romanization').textContent = 'Tap 🔊 to listen';
-            document.getElementById('card-back-text').textContent = `${card.korean}\n${card.english}`;
-            document.getElementById('card-example').textContent = card.romanization || '';
             audioBtn.classList.remove('hidden');
-            // Auto-play audio
             speakKorean(card.korean);
         } else {
             // Normal: Korean on front, English on back
@@ -211,7 +203,8 @@
             document.getElementById('card-romanization').textContent = card.romanization;
             document.getElementById('card-back-text').textContent = card.english;
             document.getElementById('card-example').textContent = card.example;
-            audioBtn.classList.add('hidden');
+            audioBtn.classList.remove('hidden');
+            speakKorean(card.korean);
         }
 
         // Update remaining count
@@ -1214,10 +1207,6 @@
         });
         document.getElementById('btn-study-reverse').addEventListener('click', () => {
             state.studyMode = 'reverse';
-            startStudy(null);
-        });
-        document.getElementById('btn-study-listening').addEventListener('click', () => {
-            state.studyMode = 'listening';
             startStudy(null);
         });
 
