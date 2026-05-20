@@ -1,5 +1,5 @@
-// Service Worker for offline support
-const CACHE_NAME = 'korean-flashcards-v2';
+// Service Worker — network-first strategy (auto-updates, no version bumping needed)
+const CACHE_NAME = 'korean-flashcards';
 const ASSETS = [
     './',
     './index.html',
@@ -12,7 +12,7 @@ const ASSETS = [
     './icons/icon-512.svg',
 ];
 
-// Install — cache all assets
+// Install — cache all assets for offline use
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
@@ -22,25 +22,17 @@ self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
 
-// Activate — clean old caches
+// Activate — take control immediately
 self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((keys) => {
-            return Promise.all(
-                keys.filter(key => key !== CACHE_NAME)
-                    .map(key => caches.delete(key))
-            );
-        })
-    );
     self.clients.claim();
 });
 
-// Fetch — serve from cache, fallback to network
+// Fetch — network first, fall back to cache when offline
 self.addEventListener('fetch', (event) => {
     event.respondWith(
-        caches.match(event.request).then((cached) => {
-            return cached || fetch(event.request).then((response) => {
-                // Cache new requests dynamically
+        fetch(event.request)
+            .then((response) => {
+                // Got fresh response — update the cache
                 if (response.status === 200) {
                     const clone = response.clone();
                     caches.open(CACHE_NAME).then((cache) => {
@@ -48,12 +40,15 @@ self.addEventListener('fetch', (event) => {
                     });
                 }
                 return response;
-            });
-        }).catch(() => {
-            // Offline fallback
-            if (event.request.mode === 'navigate') {
-                return caches.match('/index.html');
-            }
-        })
+            })
+            .catch(() => {
+                // Offline — serve from cache
+                return caches.match(event.request).then((cached) => {
+                    if (cached) return cached;
+                    if (event.request.mode === 'navigate') {
+                        return caches.match('./index.html');
+                    }
+                });
+            })
     );
 });
