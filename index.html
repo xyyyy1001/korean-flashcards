@@ -20,15 +20,15 @@
             <div id="stats-summary">
                 <div class="stat-box">
                     <span class="stat-number" id="due-count">0</span>
-                    <span class="stat-label">Due Today</span>
+                    <span class="stat-label">Due Today <span class="info-btn" id="info-due">ⓘ</span></span>
                 </div>
                 <div class="stat-box">
                     <span class="stat-number" id="learned-count">0</span>
-                    <span class="stat-label">Learned</span>
+                    <span class="stat-label">Learned <span class="info-btn" id="info-learned">ⓘ</span></span>
                 </div>
                 <div class="stat-box">
                     <span class="stat-number" id="streak-count">0</span>
-                    <span class="stat-label">Day Streak</span>
+                    <span class="stat-label">Day Streak <span class="info-btn" id="info-streak">ⓘ</span></span>
                 </div>
             </div>
             <button id="btn-study" class="btn-primary">Study Now</button>
@@ -195,7 +195,6 @@
             </div>
             <form id="edit-card-form" class="add-card-form">
                 <input type="hidden" id="edit-card-id">
-                <input type="hidden" id="edit-card-deck">
                 <div class="form-group">
                     <label for="edit-korean">Korean *</label>
                     <input type="text" id="edit-korean" required autocomplete="off">
@@ -211,6 +210,10 @@
                 <div class="form-group">
                     <label for="edit-example">Example Sentence</label>
                     <input type="text" id="edit-example" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="edit-card-deck">Deck</label>
+                    <select id="edit-card-deck"></select>
                 </div>
                 <button type="submit" class="btn-primary">Save Changes</button>
             </form>

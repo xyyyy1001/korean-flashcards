@@ -335,29 +335,31 @@
     }
 
     // ==================== Decks Screen ====================
-    function showDecks() {
-        const deckList = document.getElementById('deck-list');
+    function getDecks() {
         const builtInDecks = VOCABULARY_DATA.decks;
-
-        // Reset search
-        document.getElementById('global-search-input').value = '';
-        document.getElementById('global-search-results').style.display = 'none';
-        deckList.style.display = '';
-
-        // Gather all unique decks (built-in + custom)
         const allDeckIds = [...new Set(state.allCards.map(c => c.deckId))];
-        const decks = allDeckIds.map(id => {
+        return allDeckIds.map(id => {
             const builtIn = builtInDecks.find(d => d.id === id);
             return {
                 id: id,
                 name: builtIn ? builtIn.name : (state.allCards.find(c => c.deckId === id)?.deckName || 'My Cards'),
             };
         });
+    }
+
+    function showDecks() {
+        const deckList = document.getElementById('deck-list');
+
+        // Reset search
+        document.getElementById('global-search-input').value = '';
+        document.getElementById('global-search-results').style.display = 'none';
+        deckList.style.display = '';
+
+        const decks = getDecks();
 
         deckList.innerHTML = decks.map(deck => {
             const deckCards = state.allCards.filter(c => c.deckId === deck.id);
-            const dueCount = SRS.getDueCards(deckCards).length +
-                           SRS.getNewCards(deckCards, 5).length;
+            const dueCount = SRS.buildStudyQueue(deckCards, 5).length;
 
             return `
                 <div class="deck-item" data-deck-id="${deck.id}">
@@ -366,7 +368,6 @@
                         <div class="deck-count">${deckCards.length} cards</div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <button class="btn-manage" data-manage-deck="${deck.id}" title="Manage cards">✎</button>
                         <button class="btn-delete-deck" data-delete-deck="${deck.id}" title="Delete deck">🗑</button>
                         ${dueCount > 0 ? `<div class="deck-due">${dueCount} due</div>` : '<div class="deck-due" style="background: var(--success)">✓</div>'}
                     </div>
@@ -374,20 +375,11 @@
             `;
         }).join('');
 
-        // Bind deck click events (study)
+        // Bind deck click events (show cards)
         deckList.querySelectorAll('.deck-item').forEach(item => {
             item.addEventListener('click', (e) => {
-                // Don't trigger study when clicking manage/delete button
-                if (e.target.closest('.btn-manage') || e.target.closest('.btn-delete-deck')) return;
-                startStudy(item.dataset.deckId);
-            });
-        });
-
-        // Bind manage button events
-        deckList.querySelectorAll('.btn-manage').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showManageCards(btn.dataset.manageDeck);
+                if (e.target.closest('.btn-delete-deck')) return;
+                showManageCards(item.dataset.deckId);
             });
         });
 
@@ -516,10 +508,10 @@
         `;
         }).join('');
 
-        // Bind card tap to study
+        // Bind card tap to study deck
         cardList.querySelectorAll('.card-list-tap').forEach(el => {
             el.addEventListener('click', () => {
-                studySingleCard(el.dataset.studyId, deckId);
+                studyFromDeck(deckId);
             });
         });
 
@@ -538,15 +530,20 @@
         });
     }
 
-    function studySingleCard(cardId, returnDeckId) {
-        const card = state.allCards.find(c => c.id === cardId);
-        if (!card) return;
+    function studyFromDeck(deckId) {
+        const deckCards = state.allCards.filter(c => c.deckId === deckId);
 
-        state.studyQueue = [card];
+        if (deckCards.length === 0) {
+            alert('No cards in this deck!');
+            return;
+        }
+
+        state.currentDeck = deckId;
+        state.returnToDeck = deckId;
+        state.studyQueue = deckCards;
         state.currentCardIndex = 0;
         state.sessionStats = { again: 0, hard: 0, good: 0, easy: 0 };
-        state.returnToDeck = returnDeckId;
-
+        state.studyMode = 'normal';
         showScreen('screen-study');
         showCurrentCard();
     }
@@ -568,7 +565,14 @@
         if (!card) return;
 
         document.getElementById('edit-card-id').value = card.id;
-        document.getElementById('edit-card-deck').value = card.deckId;
+
+        // Populate deck dropdown
+        const deckSelect = document.getElementById('edit-card-deck');
+        const decks = getDecks();
+        deckSelect.innerHTML = decks.map(d =>
+            `<option value="${d.id}" ${d.id === card.deckId ? 'selected' : ''}>${d.name}</option>`
+        ).join('');
+
         document.getElementById('edit-korean').value = card.korean;
         document.getElementById('edit-english').value = card.english;
         document.getElementById('edit-romanization').value = card.romanization || '';
@@ -596,6 +600,7 @@
         card.english = english;
         card.romanization = document.getElementById('edit-romanization').value.trim();
         card.example = document.getElementById('edit-example').value.trim();
+        card.deckId = document.getElementById('edit-card-deck').value;
 
         Storage.saveCards(state.allCards);
         showManageCards(card.deckId);
@@ -1053,14 +1058,15 @@
 
         document.getElementById('stats-detail').innerHTML = `
             <div class="stats-card">
-                <h3>Overall Progress</h3>
-                <div class="value">${progressPercent}%</div>
+                <h3>Overall Progress <span class="info-btn" id="info-progress">ⓘ</span></h3>
+                <div class="value">${learnedCards}/${totalCards}</div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 8px;">${progressPercent}% learned</div>
                 <div class="progress-bar">
                     <div class="progress-fill" style="width: ${progressPercent}%"></div>
                 </div>
             </div>
             <div class="stats-card">
-                <h3>Cards Breakdown</h3>
+                <h3>Cards Breakdown <span class="info-btn" id="info-breakdown">ⓘ</span></h3>
                 <div style="display: flex; justify-content: space-between; margin-top: 10px;">
                     <div style="text-align: center;">
                         <div style="font-size: 1.5rem; font-weight: 700; color: var(--success)">${learnedCards}</div>
@@ -1082,7 +1088,7 @@
             </div>
             ${renderCalendar(stats.studyDates)}
             <div class="stats-card">
-                <h3>Total Reviews <span class="info-btn" onclick="alert('Total Reviews counts every card you rate (Again, Hard, Good, or Easy) during study sessions.\\n\\nIt includes partial sessions — if you leave early, cards already reviewed still count.\\n\\nQuiz answers are NOT included in this count.')">ⓘ</span></h3>
+                <h3>Total Reviews <span class="info-btn" id="info-reviews">ⓘ</span></h3>
                 <div class="value">${stats.totalReviews}</div>
             </div>
             <div class="stats-card">
@@ -1111,6 +1117,17 @@
         `;
 
         showScreen('screen-stats');
+
+        // Bind info buttons
+        document.getElementById('info-progress').addEventListener('click', () => {
+            alert('Overall Progress\n\nOnly cards marked as Learned (3+ correct answers in a row) count toward your progress.\n\nKeep studying and rating cards Good or Easy to increase this!');
+        });
+        document.getElementById('info-breakdown').addEventListener('click', () => {
+            alert('Cards Breakdown\n\n• Learned: Cards you answered correctly 3+ times in a row. These are well memorized.\n\n• Learning: Cards you have started studying but haven\'t reached 3 correct answers yet.\n\n• New: Cards you haven\'t studied at all yet.');
+        });
+        document.getElementById('info-reviews').addEventListener('click', () => {
+            alert('Total Reviews\n\nCounts every card you rate (Again, Hard, Good, or Easy) during study sessions.\n\nIt includes partial sessions — if you leave early, cards already reviewed still count.\n\nQuiz answers are NOT included in this count.');
+        });
     }
 
     // ==================== Export / Import ====================
@@ -1309,10 +1326,28 @@
     // ==================== Event Bindings ====================
     function bindEvents() {
         // Home buttons
-        document.getElementById('btn-study').addEventListener('click', showStudyMenu);
+        document.getElementById('btn-study').addEventListener('click', () => {
+            state.currentDeck = null;
+            state.returnToDeck = null;
+            showStudyMenu();
+        });
         document.getElementById('btn-quiz').addEventListener('click', showQuizMenu);
         document.getElementById('btn-decks').addEventListener('click', showDecks);
         document.getElementById('btn-add').addEventListener('click', showAddCard);
+
+        // Info buttons
+        document.getElementById('info-due').addEventListener('click', (e) => {
+            e.stopPropagation();
+            alert('Due Today\n\nCards ready to study right now:\n\n• New cards you haven\'t seen yet (up to 5 per session)\n• Cards whose review date has arrived based on spaced repetition\n\nIf you rate a card "Again," it comes back in ~1 minute. Rating "Good" or "Easy" pushes it days/weeks into the future.');
+        });
+        document.getElementById('info-learned').addEventListener('click', (e) => {
+            e.stopPropagation();
+            alert('Learned\n\nCards you\'ve answered correctly 3+ times in a row.\n\nThese are cards you\'ve demonstrated solid recall on. They\'ll still come back for review at longer intervals to keep them fresh.');
+        });
+        document.getElementById('info-streak').addEventListener('click', (e) => {
+            e.stopPropagation();
+            alert('Day Streak\n\nConsecutive days you\'ve studied or taken a quiz.\n\nStudy or quiz at least once per day to keep your streak going! Missing a day resets it to 0.');
+        });
 
         // Study mode menu
         document.getElementById('btn-back-study-menu').addEventListener('click', () => {
@@ -1321,11 +1356,21 @@
         });
         document.getElementById('btn-study-normal').addEventListener('click', () => {
             state.studyMode = 'normal';
-            startStudy(null);
+            if (state.studyQueue && state.studyQueue.length > 0 && state.returnToDeck) {
+                showScreen('screen-study');
+                showCurrentCard();
+            } else {
+                startStudy(state.currentDeck);
+            }
         });
         document.getElementById('btn-study-reverse').addEventListener('click', () => {
             state.studyMode = 'reverse';
-            startStudy(null);
+            if (state.studyQueue && state.studyQueue.length > 0 && state.returnToDeck) {
+                showScreen('screen-study');
+                showCurrentCard();
+            } else {
+                startStudy(state.currentDeck);
+            }
         });
 
         // Audio play button
