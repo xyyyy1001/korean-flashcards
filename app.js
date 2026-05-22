@@ -939,6 +939,7 @@
             stats.quizCorrect = (stats.quizCorrect || 0) + quiz.score;
             stats.quizWrong = (stats.quizWrong || 0) + 1;
             Storage.saveStats(stats);
+            updateDailyStreak();
 
             let title = '🔥 Game Over!';
             if (isNewHighScore && quiz.score > 0) title = '🏆 New High Score!';
@@ -967,6 +968,7 @@
             stats.quizCorrect = (stats.quizCorrect || 0) + quiz.score;
             stats.quizWrong = (stats.quizWrong || 0) + mistakes;
             Storage.saveStats(stats);
+            updateDailyStreak();
 
             let title = '🎯 Quiz Complete!';
             if (percent === 100) title = '🏆 Perfect Score!';
