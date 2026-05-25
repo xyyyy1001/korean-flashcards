@@ -372,6 +372,61 @@ body {
     color: var(--text-secondary);
 }
 
+.survival-options {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 8px;
+}
+
+.survival-options.hidden {
+    display: none;
+}
+
+.survival-setup-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+}
+
+.survival-setup-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+}
+
+.survival-options-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+
+.survival-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.survival-checkboxes label {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    background: var(--bg-card);
+    padding: 18px 20px;
+    border-radius: 12px;
+}
+
+.survival-checkboxes input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 18px;
+    height: 18px;
+}
+
 .high-score-display {
     background: var(--bg-secondary);
     border: 1px solid rgba(233, 69, 96, 0.3);
@@ -1060,6 +1115,7 @@ body {
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-8px); }
     to { opacity: 1; transform: translateY(0); }
+}
 
 @media (max-height: 600px) {
     .flashcard {

@@ -600,7 +600,10 @@
         card.english = english;
         card.romanization = document.getElementById('edit-romanization').value.trim();
         card.example = document.getElementById('edit-example').value.trim();
-        card.deckId = document.getElementById('edit-card-deck').value;
+
+        const deckSelect = document.getElementById('edit-card-deck');
+        card.deckId = deckSelect.value;
+        card.deckName = deckSelect.options[deckSelect.selectedIndex].text;
 
         Storage.saveCards(state.allCards);
         showManageCards(card.deckId);
@@ -693,11 +696,12 @@
         } else if (quiz.mode === 'listening') {
             showListeningQuestion(card);
         } else if (quiz.mode === 'survival') {
-            // Survival: randomly pick MCQ, type, or listening each round
-            const rand = Math.random();
-            if (rand < 0.4) {
+            // Survival: randomly pick from selected types
+            const types = quiz.survivalTypes || ['mcq', 'type', 'listening'];
+            const chosen = types[Math.floor(Math.random() * types.length)];
+            if (chosen === 'mcq') {
                 showMCQ(card);
-            } else if (rand < 0.7) {
+            } else if (chosen === 'type') {
                 showTypeQuestion(card);
             } else {
                 showListeningQuestion(card);
@@ -805,10 +809,15 @@
         // Update SRS based on quiz result
         applyQuizResultToSRS(card, isCorrect);
 
+        // For listening quiz, show the Korean answer in feedback
+        const isListening = quiz.mode === 'listening' ||
+            (quiz.mode === 'survival' && document.getElementById('quiz-play-audio') && !document.getElementById('quiz-play-audio').classList.contains('hidden'));
+        const koreanHint = isListening ? `\n${card.korean} (${card.english})` : '';
+
         if (isCorrect) {
             quiz.score++;
             btn.classList.add('correct');
-            showFeedback(true, '');
+            showFeedback(true, isListening ? `${card.korean} — ${card.english}` : '');
         } else {
             btn.classList.add('wrong');
             // Highlight the correct one
@@ -818,7 +827,7 @@
                 }
                 b.classList.add('disabled');
             });
-            showFeedback(false, `Correct: ${correctAnswer}`);
+            showFeedback(false, isListening ? `${card.korean} — ${card.english}` : `Correct: ${correctAnswer}`);
         }
 
         document.getElementById('quiz-score').textContent = `${quiz.score} ✓`;
@@ -1454,6 +1463,8 @@
                     stats.survivalHighScore = quiz.score;
                     Storage.saveStats(stats);
                 }
+            } else if (quiz.mode !== 'survival') {
+                if (!confirm(`Quit quiz?\n\nProgress: ${quiz.currentIndex}/${quiz.total}\n\nYour progress will not be recorded.`)) return;
             }
             showQuizMenu();
         });
@@ -1462,7 +1473,26 @@
         document.getElementById('btn-quiz-mcq').addEventListener('click', () => startQuiz('mcq'));
         document.getElementById('btn-quiz-type').addEventListener('click', () => startQuiz('type'));
         document.getElementById('btn-quiz-listening').addEventListener('click', () => startQuiz('listening'));
-        document.getElementById('btn-quiz-survival').addEventListener('click', () => startQuiz('survival'));
+        document.getElementById('btn-quiz-survival').addEventListener('click', () => {
+            showScreen('screen-survival-setup');
+        });
+        document.getElementById('btn-back-survival-setup').addEventListener('click', () => {
+            showQuizMenu();
+        });
+        document.getElementById('btn-start-survival').addEventListener('click', () => {
+            const mcq = document.getElementById('survival-mcq').checked;
+            const type = document.getElementById('survival-type').checked;
+            const listen = document.getElementById('survival-listen').checked;
+            if (!mcq && !type && !listen) {
+                alert('Select at least one question type!');
+                return;
+            }
+            quiz.survivalTypes = [];
+            if (mcq) quiz.survivalTypes.push('mcq');
+            if (type) quiz.survivalTypes.push('type');
+            if (listen) quiz.survivalTypes.push('listening');
+            startQuiz('survival');
+        });
         document.getElementById('quiz-next-btn').addEventListener('click', nextQuizQuestion);
         document.getElementById('quiz-submit-btn').addEventListener('click', handleTypeAnswer);
         document.getElementById('quiz-play-audio').addEventListener('click', () => {
