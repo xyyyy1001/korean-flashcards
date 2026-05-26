@@ -58,15 +58,27 @@ const FirebaseSync = {
     updateUI() {
         const signedOut = document.getElementById('sync-signed-out');
         const signedIn = document.getElementById('sync-signed-in');
-        const userInfo = document.getElementById('sync-user-info');
+        const signoutSection = document.getElementById('signout-section');
 
         if (this.currentUser) {
             signedOut.classList.add('hidden');
             signedIn.classList.remove('hidden');
-            userInfo.textContent = `👤 ${this.currentUser.displayName || this.currentUser.email}`;
+            signoutSection.classList.remove('hidden');
+
+            // Update user info
+            document.getElementById('sync-user-name').textContent = this.currentUser.displayName || 'User';
+            document.getElementById('sync-user-email').textContent = this.currentUser.email || '';
+            const avatar = document.getElementById('sync-user-avatar');
+            if (this.currentUser.photoURL) {
+                avatar.src = this.currentUser.photoURL;
+                avatar.style.display = 'block';
+            } else {
+                avatar.style.display = 'none';
+            }
         } else {
             signedOut.classList.remove('hidden');
             signedIn.classList.add('hidden');
+            signoutSection.classList.add('hidden');
         }
     },
 

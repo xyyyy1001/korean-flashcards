@@ -1151,7 +1151,7 @@ body {
 
 /* Settings */
 .settings-list {
-    padding: 16px;
+    padding: 0 16px;
 }
 
 .settings-section-title {
@@ -1161,7 +1161,27 @@ body {
     letter-spacing: 1px;
     margin-top: 24px;
     margin-bottom: 12px;
-    padding-left: 4px;
+    padding-left: 16px;
+    text-align: left;
+}
+
+.settings-group {
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+    margin: 0;
+}
+
+.settings-group .settings-item {
+    border-radius: 0;
+    margin-bottom: 0;
+    background: none;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.settings-group .settings-item:last-child {
+    border-bottom: none;
 }
 
 .settings-item {
@@ -1206,8 +1226,68 @@ body {
     display: none;
 }
 
+#signout-section.hidden {
+    display: none;
+}
+
 #sync-section {
     margin-top: 8px;
+}
+
+.account-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-card);
+    padding: 16px 18px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.account-icon {
+    font-size: 2rem;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border-radius: 50%;
+}
+
+.account-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.account-text {
+    flex: 1;
+}
+
+.account-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.account-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.btn-signout {
+    width: 100%;
+    padding: 14px;
+    background: none;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 .settings-item select {

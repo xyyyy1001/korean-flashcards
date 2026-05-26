@@ -1932,7 +1932,9 @@
             FirebaseSync.signIn();
         });
         document.getElementById('btn-google-signout').addEventListener('click', () => {
-            FirebaseSync.signOut();
+            if (confirm('Are you sure you want to sign out? Your local data will remain on this device.')) {
+                FirebaseSync.signOut();
+            }
         });
         document.getElementById('btn-sync-now').addEventListener('click', () => {
             FirebaseSync.sync();

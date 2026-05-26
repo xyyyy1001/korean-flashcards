@@ -46,55 +46,78 @@
                 <span>Settings</span>
                 <span></span>
             </div>
-            <div class="settings-list">
-                <div class="settings-item">
-                    <div class="settings-label">🔊 Quiz Sound Effects</div>
-                    <label class="toggle">
-                        <input type="checkbox" id="setting-sound" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
+
+            <!-- Account Section (top) -->
+            <div id="sync-section" class="settings-list">
+                <div id="sync-signed-out">
+                    <div class="account-card">
+                        <div class="account-icon">👤</div>
+                        <div class="account-text">
+                            <div class="account-title">Not signed in</div>
+                            <div class="account-subtitle">Sign in to sync progress across devices</div>
+                        </div>
+                        <button id="btn-google-signin" class="btn-small">Sign in</button>
+                    </div>
                 </div>
-                <div class="settings-item">
-                    <div class="settings-label">🃏 Card Flip Sound</div>
-                    <label class="toggle">
-                        <input type="checkbox" id="setting-flip-sound" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="settings-item">
-                    <div class="settings-label">🔀 Shuffle Study Order</div>
-                    <label class="toggle">
-                        <input type="checkbox" id="setting-shuffle">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>             
-                <div class="settings-section-title">Study <button class="info-btn" onclick="alert('Controls how many unseen cards are added to your daily study queue. Due cards (needing review) are always included, plus up to this many new cards. Keeps you from being overwhelmed with too many new words at once.')">ⓘ</button></div>
-                <div class="settings-item">
-                    <div class="settings-label">New Cards Per Day</div>
-                    <select id="setting-new-cards">
-                        <option value="3">3</option>
-                        <option value="5" selected>5</option>
-                        <option value="10">10</option>
-                        <option value="15">15</option>
-                        <option value="20">20</option>
-                    </select>
+                <div id="sync-signed-in" class="hidden">
+                    <div class="account-card">
+                        <img id="sync-user-avatar" class="account-avatar" src="" alt="">
+                        <div class="account-text">
+                            <div class="account-title" id="sync-user-name">User</div>
+                            <div class="account-subtitle" id="sync-user-email">email</div>
+                        </div>
+                        <button id="btn-sync-now" class="btn-small">Sync</button>
+                    </div>
+                    <div id="sync-status" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px; padding-left: 4px;"></div>
                 </div>
             </div>
 
-            <div class="settings-section-title">Account</div>
-            <div id="sync-section" class="settings-list">
-                <div id="sync-signed-out">
-                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 12px;">Sign in to sync your progress across devices</p>
-                    <button id="btn-google-signin" class="btn-primary" style="width: 100%;">🔗 Sign in with Google</button>
-                </div>
-                <div id="sync-signed-in" class="hidden">
+            <!-- App Settings (middle) -->
+            <div class="settings-section-title">Preferences</div>
+            <div class="settings-list">
+                <div class="settings-group">
                     <div class="settings-item">
-                        <div class="settings-label" id="sync-user-info">Signed in</div>
-                        <button id="btn-sync-now" class="btn-small">Sync</button>
+                        <div class="settings-label">🔊 Quiz Sound Effects</div>
+                        <label class="toggle">
+                            <input type="checkbox" id="setting-sound" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
                     </div>
-                    <div id="sync-status" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;"></div>
-                    <button id="btn-google-signout" class="btn-danger-small" style="margin-top: 12px; width: 100%;">Sign Out</button>
+                    <div class="settings-item">
+                        <div class="settings-label">🃏 Card Flip Sound</div>
+                        <label class="toggle">
+                            <input type="checkbox" id="setting-flip-sound" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-item">
+                        <div class="settings-label">🔀 Shuffle Study Order</div>
+                        <label class="toggle">
+                            <input type="checkbox" id="setting-shuffle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
                 </div>
+            </div>
+            <div class="settings-section-title">Study <button class="info-btn" onclick="alert('Controls how many unseen cards are added to your daily study queue. Due cards (needing review) are always included, plus up to this many new cards. Keeps you from being overwhelmed with too many new words at once.')">ⓘ</button></div>
+            <div class="settings-list">
+                <div class="settings-group">
+                    <div class="settings-item">
+                        <div class="settings-label">New Cards Per Day</div>
+                        <select id="setting-new-cards">
+                            <option value="3">3</option>
+                            <option value="5" selected>5</option>
+                            <option value="10">10</option>
+                            <option value="15">15</option>
+                            <option value="20">20</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sign Out (bottom) -->
+            <div id="signout-section" class="hidden" style="margin-top: 24px; padding: 0 16px;">
+                <button id="btn-google-signout" class="btn-signout">Sign Out</button>
             </div>
         </div>
         <div id="screen-study-menu" class="screen">
