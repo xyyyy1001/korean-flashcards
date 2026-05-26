@@ -1179,6 +1179,37 @@ body {
     color: var(--text-primary);
 }
 
+.btn-small {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-danger-small {
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+#sync-signed-in.hidden,
+#sync-signed-out.hidden {
+    display: none;
+}
+
+#sync-section {
+    margin-top: 8px;
+}
+
 .settings-item select {
     background: var(--bg-secondary);
     color: var(--text-primary);

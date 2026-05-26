@@ -1,0 +1,176 @@
+// Firebase Configuration & Sync
+const firebaseConfig = {
+    apiKey: "AIzaSyDGpM10sHseMklVrypLFWZh_YuTrc-qCY0",
+    authDomain: "korean-flashcards-7a078.firebaseapp.com",
+    projectId: "korean-flashcards-7a078",
+    storageBucket: "korean-flashcards-7a078.firebasestorage.app",
+    messagingSenderId: "881377079698",
+    appId: "1:881377079698:web:78ce4f162b1d8b6739114b"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const FirebaseSync = {
+    currentUser: null,
+    syncInProgress: false,
+
+    // Initialize auth state listener
+    init() {
+        auth.onAuthStateChanged((user) => {
+            this.currentUser = user;
+            this.updateUI();
+            if (user) {
+                this.pullFromCloud();
+            }
+        });
+    },
+
+    // Google sign in
+    async signIn() {
+        try {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            await auth.signInWithPopup(provider);
+        } catch (error) {
+            // Try redirect for mobile (popup blocked on iOS)
+            if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                await auth.signInWithRedirect(provider);
+            } else {
+                console.error('Sign in error:', error);
+                alert('Sign in failed: ' + error.message);
+            }
+        }
+    },
+
+    // Sign out
+    async signOut() {
+        try {
+            await auth.signOut();
+        } catch (error) {
+            console.error('Sign out error:', error);
+        }
+    },
+
+    // Update UI based on auth state
+    updateUI() {
+        const signedOut = document.getElementById('sync-signed-out');
+        const signedIn = document.getElementById('sync-signed-in');
+        const userInfo = document.getElementById('sync-user-info');
+
+        if (this.currentUser) {
+            signedOut.classList.add('hidden');
+            signedIn.classList.remove('hidden');
+            userInfo.textContent = `👤 ${this.currentUser.displayName || this.currentUser.email}`;
+        } else {
+            signedOut.classList.remove('hidden');
+            signedIn.classList.add('hidden');
+        }
+    },
+
+    // Push local data to Firestore
+    async pushToCloud() {
+        if (!this.currentUser || this.syncInProgress) return;
+        this.syncInProgress = true;
+        this.setStatus('Syncing...');
+
+        try {
+            const userRef = db.collection('users').doc(this.currentUser.uid);
+
+            const cards = JSON.parse(localStorage.getItem('kf_cards') || '[]');
+            const stats = JSON.parse(localStorage.getItem('kf_stats') || '{}');
+            const settings = JSON.parse(localStorage.getItem('kf_settings') || '{}');
+
+            await userRef.set({
+                cards: JSON.stringify(cards),
+                stats: JSON.stringify(stats),
+                settings: JSON.stringify(settings),
+                lastSync: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: Date.now()
+            });
+
+            this.setStatus('✓ Synced ' + new Date().toLocaleTimeString());
+        } catch (error) {
+            console.error('Push error:', error);
+            this.setStatus('✗ Sync failed');
+        } finally {
+            this.syncInProgress = false;
+        }
+    },
+
+    // Pull cloud data to local
+    async pullFromCloud() {
+        if (!this.currentUser || this.syncInProgress) return;
+        this.syncInProgress = true;
+        this.setStatus('Loading from cloud...');
+
+        try {
+            const userRef = db.collection('users').doc(this.currentUser.uid);
+            const doc = await userRef.get();
+
+            if (doc.exists) {
+                const data = doc.data();
+                const cloudUpdatedAt = data.updatedAt || 0;
+
+                // Compare with local timestamp
+                const localUpdatedAt = parseInt(localStorage.getItem('kf_updated_at') || '0');
+
+                if (cloudUpdatedAt > localUpdatedAt) {
+                    // Cloud is newer — pull
+                    if (data.cards) localStorage.setItem('kf_cards', data.cards);
+                    if (data.stats) localStorage.setItem('kf_stats', data.stats);
+                    if (data.settings) localStorage.setItem('kf_settings', data.settings);
+                    localStorage.setItem('kf_updated_at', String(cloudUpdatedAt));
+
+                    this.setStatus('✓ Loaded from cloud');
+                    // Reload app state
+                    if (typeof reloadAppState === 'function') {
+                        reloadAppState();
+                    }
+                } else {
+                    // Local is newer — push
+                    await this.pushToCloud();
+                }
+            } else {
+                // No cloud data — push local data up
+                await this.pushToCloud();
+            }
+        } catch (error) {
+            console.error('Pull error:', error);
+            this.setStatus('✗ Load failed');
+        } finally {
+            this.syncInProgress = false;
+        }
+    },
+
+    // Manual sync (push)
+    async sync() {
+        localStorage.setItem('kf_updated_at', String(Date.now()));
+        await this.pushToCloud();
+    },
+
+    // Set status text
+    setStatus(text) {
+        const el = document.getElementById('sync-status');
+        if (el) el.textContent = text;
+    },
+
+    // Call after any data change to auto-sync
+    onDataChanged() {
+        localStorage.setItem('kf_updated_at', String(Date.now()));
+        // Debounce: sync after 3 seconds of no changes
+        clearTimeout(this._syncTimeout);
+        this._syncTimeout = setTimeout(() => {
+            if (this.currentUser) {
+                this.pushToCloud();
+            }
+        }, 3000);
+    }
+};
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    FirebaseSync.init();
+});

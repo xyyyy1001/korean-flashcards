@@ -23,6 +23,7 @@
 
         saveCards(cards) {
             this.save(this.KEY_CARDS, cards);
+            if (typeof FirebaseSync !== 'undefined') FirebaseSync.onDataChanged();
         },
 
         getStats() {
@@ -40,6 +41,7 @@
 
         saveStats(stats) {
             this.save(this.KEY_STATS, stats);
+            if (typeof FirebaseSync !== 'undefined') FirebaseSync.onDataChanged();
         },
 
         getSettings() {
@@ -1924,6 +1926,17 @@
             }
         });
 
+        // Firebase sync buttons
+        document.getElementById('btn-google-signin').addEventListener('click', () => {
+            FirebaseSync.signIn();
+        });
+        document.getElementById('btn-google-signout').addEventListener('click', () => {
+            FirebaseSync.signOut();
+        });
+        document.getElementById('btn-sync-now').addEventListener('click', () => {
+            FirebaseSync.sync();
+        });
+
         // Complete screen
         document.getElementById('btn-home').addEventListener('click', () => {
             if (state.returnToDeck === '__favorites__') {
@@ -1969,5 +1982,12 @@
     }
 
     // ==================== Start App ====================
+    // Expose reload function for Firebase sync
+    window.reloadAppState = function() {
+        loadOrInitializeCards();
+        updateHomeStats();
+        showScreen('screen-home');
+    };
+
     document.addEventListener('DOMContentLoaded', init);
 })();
