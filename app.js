@@ -45,7 +45,6 @@
         getSettings() {
             return this.load(this.KEY_SETTINGS) || {
                 sound: true,
-                vibration: true,
                 shuffle: false,
                 flipSound: true,
                 confetti: true,
@@ -1107,10 +1106,6 @@
         el.textContent = correct ? '✓ Correct!' : `✗ Wrong. ${message}`;
 
         const settings = Storage.getSettings();
-        // Vibration feedback
-        if (settings.vibration && navigator.vibrate) {
-            navigator.vibrate(correct ? 50 : [100, 50, 100]);
-        }
         // Sound feedback
         if (settings.sound) {
             playFeedbackSound(correct);
@@ -1315,10 +1310,8 @@
     function showSettings() {
         const settings = Storage.getSettings();
         document.getElementById('setting-sound').checked = settings.sound;
-        document.getElementById('setting-vibration').checked = settings.vibration;
         document.getElementById('setting-shuffle').checked = settings.shuffle;
         document.getElementById('setting-flip-sound').checked = settings.flipSound;
-        document.getElementById('setting-confetti').checked = settings.confetti;
         document.getElementById('setting-new-cards').value = settings.newCardsPerDay;
         showScreen('screen-settings');
     }
@@ -1326,10 +1319,9 @@
     function saveSettingsFromUI() {
         const settings = {
             sound: document.getElementById('setting-sound').checked,
-            vibration: document.getElementById('setting-vibration').checked,
             shuffle: document.getElementById('setting-shuffle').checked,
             flipSound: document.getElementById('setting-flip-sound').checked,
-            confetti: document.getElementById('setting-confetti').checked,
+            confetti: true,
             newCardsPerDay: parseInt(document.getElementById('setting-new-cards').value),
         };
         Storage.saveSettings(settings);
@@ -1600,6 +1592,24 @@
         let deckId = document.getElementById('input-deck').value;
 
         if (!korean || !english) return;
+
+        // Check for duplicate cards
+        const duplicateKorean = state.allCards.find(c => c.korean.toLowerCase() === korean.toLowerCase());
+        const duplicateEnglish = !duplicateKorean && state.allCards.find(c => c.english.toLowerCase() === english.toLowerCase());
+        const duplicate = duplicateKorean || duplicateEnglish;
+
+        if (duplicate) {
+            const matchType = duplicateKorean ? 'Korean' : 'English';
+            const deckName = duplicate.deckName || getDecks().find(d => d.id === duplicate.deckId)?.name || 'Unknown';
+            const addAnyway = confirm(
+                `A card with the same ${matchType} already exists in "${deckName}" deck:\n\n` +
+                `${duplicate.korean} → ${duplicate.english}\n\n` +
+                `• OK = Add anyway\n• Cancel = Continue editing`
+            );
+            if (!addAnyway) {
+                return;
+            }
+        }
 
         // Handle new deck creation
         let deckName = 'My Cards';
