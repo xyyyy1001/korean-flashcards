@@ -40,6 +40,21 @@
 
         saveStats(stats) {
             this.save(this.KEY_STATS, stats);
+        },
+
+        getSettings() {
+            return this.load(this.KEY_SETTINGS) || {
+                sound: true,
+                vibration: true,
+                shuffle: false,
+                flipSound: true,
+                confetti: true,
+                newCardsPerDay: 5,
+            };
+        },
+
+        saveSettings(settings) {
+            this.save(this.KEY_SETTINGS, settings);
         }
     };
 
@@ -104,7 +119,8 @@
     // ==================== Home Screen ====================
     function updateHomeStats() {
         const cards = state.allCards;
-        const studyQueue = SRS.buildStudyQueue(cards, 5);
+        const settings = Storage.getSettings();
+        const studyQueue = SRS.buildStudyQueue(cards, settings.newCardsPerDay);
         const learnedCards = cards.filter(c => c.repetitions >= 3);
         const stats = Storage.getStats();
 
@@ -152,6 +168,7 @@
 
     function startStudy(deckId) {
         let cards = state.allCards;
+        const settings = Storage.getSettings();
 
         if (deckId) {
             cards = cards.filter(c => c.deckId === deckId);
@@ -161,7 +178,12 @@
         }
 
         state.returnToDeck = null;
-        state.studyQueue = SRS.buildStudyQueue(cards, 5);
+        state.studyQueue = SRS.buildStudyQueue(cards, settings.newCardsPerDay);
+        
+        if (settings.shuffle) {
+            state.studyQueue = shuffleArray([...state.studyQueue]);
+        }
+        
         state.currentCardIndex = 0;
         state.sessionStats = { again: 0, hard: 0, good: 0, easy: 0 };
 
@@ -207,6 +229,11 @@
             speakKorean(card.korean);
         }
 
+        // Update favorite button
+        const favBtn = document.getElementById('btn-study-fav');
+        favBtn.textContent = card.favorite ? '★' : '☆';
+        favBtn.classList.toggle('active', !!card.favorite);
+
         // Update remaining count
         const remaining = state.studyQueue.length - state.currentCardIndex;
         document.getElementById('cards-remaining').textContent = `${remaining} remaining`;
@@ -218,6 +245,7 @@
 
     function flipCard() {
         const flashcard = document.getElementById('flashcard');
+        playFlipSound();
 
         if (!state.isFlipped) {
             flashcard.classList.add('flipped');
@@ -356,10 +384,30 @@
         deckList.style.display = '';
 
         const decks = getDecks();
+        const settings = Storage.getSettings();
+        const favCards = state.allCards.filter(c => c.favorite);
 
-        deckList.innerHTML = decks.map(deck => {
+        // Build deck list HTML
+        let deckHTML = '';
+
+        // Add Favorites deck at top if there are favorites
+        if (favCards.length > 0) {
+            deckHTML += `
+                <div class="deck-item deck-item-fav" data-deck-id="__favorites__">
+                    <div>
+                        <div class="deck-name">⭐ Favorites</div>
+                        <div class="deck-count">${favCards.length} cards</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div class="deck-due" style="background: var(--accent)">★</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        deckHTML += decks.map(deck => {
             const deckCards = state.allCards.filter(c => c.deckId === deck.id);
-            const dueCount = SRS.buildStudyQueue(deckCards, 5).length;
+            const dueCount = SRS.buildStudyQueue(deckCards, settings.newCardsPerDay).length;
 
             return `
                 <div class="deck-item" data-deck-id="${deck.id}">
@@ -375,11 +423,18 @@
             `;
         }).join('');
 
+        deckList.innerHTML = deckHTML;
+
         // Bind deck click events (show cards)
         deckList.querySelectorAll('.deck-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 if (e.target.closest('.btn-delete-deck')) return;
-                showManageCards(item.dataset.deckId);
+                const deckId = item.dataset.deckId;
+                if (deckId === '__favorites__') {
+                    showFavorites();
+                } else {
+                    showManageCards(deckId);
+                }
             });
         });
 
@@ -469,6 +524,83 @@
         showScreen('screen-manage');
     }
 
+    function showFavorites() {
+        currentManageDeck = '__favorites__';
+        document.getElementById('manage-title').textContent = '⭐ Favorites';
+        document.getElementById('card-search-input').value = '';
+        renderFavoritesList();
+        showScreen('screen-manage');
+    }
+
+    function renderFavoritesList(searchQuery) {
+        let favCards = state.allCards.filter(c => c.favorite);
+        const cardList = document.getElementById('card-list');
+
+        if (searchQuery && searchQuery.trim()) {
+            const q = searchQuery.trim().toLowerCase();
+            favCards = favCards.filter(c =>
+                c.korean.toLowerCase().includes(q) ||
+                c.english.toLowerCase().includes(q) ||
+                (c.romanization && c.romanization.toLowerCase().includes(q))
+            );
+        }
+
+        if (favCards.length === 0) {
+            cardList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; margin-top: 40px;">No favorite cards</p>';
+            return;
+        }
+
+        cardList.innerHTML = favCards.map(card => {
+            const status = getCardStatus(card);
+            return `
+            <div class="card-list-item" data-card-id="${card.id}">
+                <div class="card-list-info card-list-tap" data-study-id="${card.id}">
+                    <div class="card-list-korean">${card.korean}</div>
+                    <div class="card-list-english">${card.english}</div>
+                    <div class="card-list-meta">
+                        <span class="card-status ${status.class}">${status.label}</span>
+                        <span class="card-reps">×${card.repetitions || 0}</span>
+                    </div>
+                </div>
+                <div class="card-list-actions">
+                    <button class="btn-fav active" data-fav-id="${card.id}">★</button>
+                    <button class="btn-edit" data-edit-id="${card.id}">Edit</button>
+                </div>
+            </div>
+        `;
+        }).join('');
+
+        // Bind favorite buttons (unfavorite)
+        cardList.querySelectorAll('.btn-fav').forEach(btn => {
+            btn.addEventListener('click', () => {
+                toggleFavorite(btn.dataset.favId);
+                renderFavoritesList(document.getElementById('card-search-input').value);
+            });
+        });
+
+        // Bind card tap to study favorites
+        cardList.querySelectorAll('.card-list-tap').forEach(el => {
+            el.addEventListener('click', () => {
+                const favCards = state.allCards.filter(c => c.favorite);
+                if (favCards.length === 0) return;
+                state.studyQueue = favCards;
+                state.currentCardIndex = 0;
+                state.sessionStats = { again: 0, hard: 0, good: 0, easy: 0 };
+                state.studyMode = 'normal';
+                state.returnToDeck = '__favorites__';
+                showScreen('screen-study');
+                showCurrentCard();
+            });
+        });
+
+        // Bind edit buttons
+        cardList.querySelectorAll('.btn-edit').forEach(btn => {
+            btn.addEventListener('click', () => {
+                showEditCard(btn.dataset.editId);
+            });
+        });
+    }
+
     function renderCardList(deckId, searchQuery) {
         let deckCards = state.allCards.filter(c => c.deckId === deckId);
         const cardList = document.getElementById('card-list');
@@ -490,6 +622,7 @@
 
         cardList.innerHTML = deckCards.map(card => {
             const status = getCardStatus(card);
+            const isFav = card.favorite ? 'active' : '';
             return `
             <div class="card-list-item" data-card-id="${card.id}">
                 <div class="card-list-info card-list-tap" data-study-id="${card.id}">
@@ -501,12 +634,21 @@
                     </div>
                 </div>
                 <div class="card-list-actions">
+                    <button class="btn-fav ${isFav}" data-fav-id="${card.id}">★</button>
                     <button class="btn-edit" data-edit-id="${card.id}">Edit</button>
                     <button class="btn-delete" data-delete-id="${card.id}">Delete</button>
                 </div>
             </div>
         `;
         }).join('');
+
+        // Bind favorite buttons
+        cardList.querySelectorAll('.btn-fav').forEach(btn => {
+            btn.addEventListener('click', () => {
+                toggleFavorite(btn.dataset.favId);
+                renderCardList(deckId, document.getElementById('card-search-input').value);
+            });
+        });
 
         // Bind card tap to study deck
         cardList.querySelectorAll('.card-list-tap').forEach(el => {
@@ -625,6 +767,7 @@
         score: 0,
         total: 10,
         answered: false,
+        mistakes: [],      // cards answered incorrectly
     };
 
     function showQuizMenu() {
@@ -643,6 +786,7 @@
         quiz.currentIndex = 0;
         quiz.score = 0;
         quiz.answered = false;
+        quiz.mistakes = [];
 
         // Pick random cards for the quiz (need at least 4 for MCQ)
         const available = state.allCards.filter(c => c.korean && c.english);
@@ -806,6 +950,9 @@
         const isCorrect = selected === correctAnswer;
         const card = quiz.questions[quiz.currentIndex];
 
+        // Track mistakes
+        if (!isCorrect) quiz.mistakes.push(card);
+
         // Update SRS based on quiz result
         applyQuizResultToSRS(card, isCorrect);
 
@@ -872,6 +1019,9 @@
         const normalize = (s) => s.replace(/\s+/g, '').toLowerCase();
         const isCorrect = normalize(userAnswer) === normalize(correct);
 
+        // Track mistakes
+        if (!isCorrect) quiz.mistakes.push(card);
+
         // Update SRS based on quiz result
         applyQuizResultToSRS(card, isCorrect);
 
@@ -913,11 +1063,58 @@
         Storage.saveCards(state.allCards);
     }
 
+    function playFeedbackSound(correct) {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const gain = ctx.createGain();
+            gain.connect(ctx.destination);
+            gain.gain.value = 0.2;
+
+            if (correct) {
+                // Duolingo-style "ding ding" - two ascending notes
+                const osc1 = ctx.createOscillator();
+                osc1.type = 'sine';
+                osc1.frequency.value = 587; // D5
+                osc1.connect(gain);
+                osc1.start(ctx.currentTime);
+                osc1.stop(ctx.currentTime + 0.1);
+
+                const osc2 = ctx.createOscillator();
+                osc2.type = 'sine';
+                osc2.frequency.value = 784; // G5
+                osc2.connect(gain);
+                osc2.start(ctx.currentTime + 0.12);
+                osc2.stop(ctx.currentTime + 0.2);
+            } else {
+                // Duolingo-style soft "bonk" - short descending thud
+                const osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                osc.connect(gain);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.2);
+            }
+        } catch (e) {}
+    }
+
     function showFeedback(correct, message) {
         const el = document.getElementById('quiz-feedback');
         el.classList.remove('hidden', 'correct', 'wrong');
         el.classList.add(correct ? 'correct' : 'wrong');
         el.textContent = correct ? '✓ Correct!' : `✗ Wrong. ${message}`;
+
+        const settings = Storage.getSettings();
+        // Vibration feedback
+        if (settings.vibration && navigator.vibrate) {
+            navigator.vibrate(correct ? 50 : [100, 50, 100]);
+        }
+        // Sound feedback
+        if (settings.sound) {
+            playFeedbackSound(correct);
+        }
     }
 
     function nextQuizQuestion() {
@@ -968,6 +1165,9 @@
                 </div>
             ` + (isNewHighScore && quiz.score > 0 ? `<p style="color: var(--accent); font-size: 0.9rem; margin-top: 12px; font-weight: 600;">🎉 You beat your record!</p>` : '');
 
+            // Confetti on new high score
+            if (isNewHighScore && quiz.score > 0) launchConfetti();
+
         } else {
             // Normal quiz results
             const percent = Math.round((quiz.score / quiz.total) * 100);
@@ -1006,6 +1206,17 @@
                     <span class="label">Wrong</span>
                 </div>
             ` + mistakeNote;
+
+            // Confetti on perfect score
+            if (percent === 100) launchConfetti();
+        }
+
+        // Show/hide review mistakes button
+        const reviewBtn = document.getElementById('btn-quiz-review-mistakes');
+        if (quiz.mistakes.length > 0) {
+            reviewBtn.classList.remove('hidden');
+        } else {
+            reviewBtn.classList.add('hidden');
         }
 
         showScreen('screen-quiz-results');
@@ -1017,6 +1228,119 @@
             [arr[i], arr[j]] = [arr[j], arr[i]];
         }
         return arr;
+    }
+
+    // ==================== Confetti ====================
+    function launchConfetti() {
+        const settings = Storage.getSettings();
+        if (!settings.confetti) return;
+
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        canvas.style.display = 'block';
+
+        const particles = [];
+        const colors = ['#91A8D0', '#F7CAC9', '#4ecdc4', '#ffe66d', '#ff6b6b', '#a8e6cf'];
+
+        for (let i = 0; i < 100; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                vx: (Math.random() - 0.5) * 4,
+                vy: Math.random() * 3 + 2,
+                size: Math.random() * 8 + 4,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                rotation: Math.random() * 360,
+                rotSpeed: (Math.random() - 0.5) * 10,
+            });
+        }
+
+        let frame = 0;
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let alive = false;
+
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1;
+                p.rotation += p.rotSpeed;
+
+                if (p.y < canvas.height + 20) {
+                    alive = true;
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                    ctx.restore();
+                }
+            });
+
+            frame++;
+            if (alive && frame < 180) {
+                requestAnimationFrame(animate);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                canvas.style.display = 'none';
+            }
+        }
+        animate();
+    }
+
+    // ==================== Card Flip Sound ====================
+    function playFlipSound() {
+        const settings = Storage.getSettings();
+        if (!settings.flipSound) return;
+
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.05);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.08);
+        } catch (e) {}
+    }
+
+    // ==================== Settings ====================
+    function showSettings() {
+        const settings = Storage.getSettings();
+        document.getElementById('setting-sound').checked = settings.sound;
+        document.getElementById('setting-vibration').checked = settings.vibration;
+        document.getElementById('setting-shuffle').checked = settings.shuffle;
+        document.getElementById('setting-flip-sound').checked = settings.flipSound;
+        document.getElementById('setting-confetti').checked = settings.confetti;
+        document.getElementById('setting-new-cards').value = settings.newCardsPerDay;
+        showScreen('screen-settings');
+    }
+
+    function saveSettingsFromUI() {
+        const settings = {
+            sound: document.getElementById('setting-sound').checked,
+            vibration: document.getElementById('setting-vibration').checked,
+            shuffle: document.getElementById('setting-shuffle').checked,
+            flipSound: document.getElementById('setting-flip-sound').checked,
+            confetti: document.getElementById('setting-confetti').checked,
+            newCardsPerDay: parseInt(document.getElementById('setting-new-cards').value),
+        };
+        Storage.saveSettings(settings);
+    }
+
+    // ==================== Favorites ====================
+    function toggleFavorite(cardId) {
+        const card = state.allCards.find(c => c.id === cardId);
+        if (!card) return;
+        card.favorite = !card.favorite;
+        Storage.saveCards(state.allCards);
     }
 
     // ==================== Stats Screen ====================
@@ -1390,7 +1714,37 @@
             const card = state.studyQueue[state.currentCardIndex];
             if (card) speakKorean(card.korean);
         });
+        document.getElementById('btn-study-fav').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const card = state.studyQueue[state.currentCardIndex];
+            if (card) {
+                toggleFavorite(card.id);
+                const favBtn = document.getElementById('btn-study-fav');
+                favBtn.textContent = card.favorite ? '★' : '☆';
+                favBtn.classList.toggle('active', !!card.favorite);
+            }
+        });
         document.getElementById('btn-stats').addEventListener('click', showStats);
+        document.getElementById('btn-settings').addEventListener('click', showSettings);
+        document.getElementById('btn-back-settings').addEventListener('click', () => {
+            showScreen('screen-home');
+        });
+        // Settings auto-save on change
+        document.querySelectorAll('#screen-settings input, #screen-settings select').forEach(el => {
+            el.addEventListener('change', saveSettingsFromUI);
+        });
+
+        // Review mistakes button
+        document.getElementById('btn-quiz-review-mistakes').addEventListener('click', () => {
+            if (quiz.mistakes.length === 0) return;
+            state.studyQueue = [...quiz.mistakes];
+            state.currentCardIndex = 0;
+            state.sessionStats = { again: 0, hard: 0, good: 0, easy: 0 };
+            state.studyMode = 'normal';
+            state.returnToDeck = null;
+            showScreen('screen-study');
+            showCurrentCard();
+        });
 
         // Back buttons
         document.getElementById('btn-back-study').addEventListener('click', () => {
@@ -1408,7 +1762,10 @@
                 updateDailyStreak(stats);
                 Storage.saveStats(stats);
             }
-            if (state.returnToDeck) {
+            if (state.returnToDeck === '__favorites__') {
+                showFavorites();
+                state.returnToDeck = null;
+            } else if (state.returnToDeck) {
                 showManageCards(state.returnToDeck);
                 state.returnToDeck = null;
             } else {
@@ -1433,13 +1790,19 @@
             showDecks();
         });
         document.getElementById('card-search-input').addEventListener('input', (e) => {
-            if (currentManageDeck) {
+            if (currentManageDeck === '__favorites__') {
+                renderFavoritesList(e.target.value);
+            } else if (currentManageDeck) {
                 renderCardList(currentManageDeck, e.target.value);
             }
         });
         document.getElementById('btn-back-edit').addEventListener('click', () => {
-            const deckId = document.getElementById('edit-card-deck').value;
-            showManageCards(deckId);
+            if (currentManageDeck === '__favorites__') {
+                showFavorites();
+            } else {
+                const deckId = document.getElementById('edit-card-deck').value;
+                showManageCards(deckId);
+            }
         });
         document.getElementById('edit-card-form').addEventListener('submit', saveEditCard);
         document.getElementById('btn-back-quiz-menu').addEventListener('click', () => {
@@ -1543,7 +1906,10 @@
 
         // Complete screen
         document.getElementById('btn-home').addEventListener('click', () => {
-            if (state.returnToDeck) {
+            if (state.returnToDeck === '__favorites__') {
+                showFavorites();
+                state.returnToDeck = null;
+            } else if (state.returnToDeck) {
                 showManageCards(state.returnToDeck);
                 state.returnToDeck = null;
             } else {

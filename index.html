@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <canvas id="confetti-canvas"></canvas>
     <div id="app">
         <!-- Home Screen -->
         <div id="screen-home" class="screen active">
@@ -35,6 +36,64 @@
             <button id="btn-quiz" class="btn-secondary">🎯 Quiz Mode</button>
             <button id="btn-decks" class="btn-secondary">My Cards</button>
             <button id="btn-stats" class="btn-secondary">Progress</button>
+            <button id="btn-settings" class="btn-secondary">⚙️ Settings</button>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="screen-settings" class="screen">
+            <div class="study-header">
+                <button class="btn-back" id="btn-back-settings">←</button>
+                <span>Settings</span>
+                <span></span>
+            </div>
+            <div class="settings-list">
+                <div class="settings-item">
+                    <div class="settings-label">🔊 Quiz Sound Effects</div>
+                    <label class="toggle">
+                        <input type="checkbox" id="setting-sound" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-label">📳 Vibration</div>
+                    <label class="toggle">
+                        <input type="checkbox" id="setting-vibration" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-label">🔀 Shuffle Study Order</div>
+                    <label class="toggle">
+                        <input type="checkbox" id="setting-shuffle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-label">🃏 Card Flip Sound</div>
+                    <label class="toggle">
+                        <input type="checkbox" id="setting-flip-sound" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-label">🎉 Confetti Effects</div>
+                    <label class="toggle">
+                        <input type="checkbox" id="setting-confetti" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-section-title">Study <button class="info-btn" onclick="alert('Controls how many unseen cards are added to your daily study queue. Due cards (needing review) are always included, plus up to this many new cards. Keeps you from being overwhelmed with too many new words at once.')">ⓘ</button></div>
+                <div class="settings-item">
+                    <div class="settings-label">New Cards Per Day</div>
+                    <select id="setting-new-cards">
+                        <option value="3">3</option>
+                        <option value="5" selected>5</option>
+                        <option value="10">10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                    </select>
+                </div>
+            </div>
         </div>
 
         <!-- Study Mode Menu -->
@@ -69,6 +128,7 @@
                 <div id="flashcard" class="flashcard">
                     <div class="card-front">
                         <button id="btn-play-audio" class="btn-audio hidden">🔊</button>
+                        <button id="btn-study-fav" class="btn-study-fav">☆</button>
                         <span class="card-korean" id="card-front-text"></span>
                         <span class="card-hint" id="card-romanization"></span>
                     </div>
@@ -190,6 +250,7 @@
                 <h2 id="quiz-results-title">🎯 Quiz Complete!</h2>
                 <div id="quiz-results-score" class="quiz-results-score"></div>
                 <div id="quiz-results-detail" class="quiz-results-detail"></div>
+                <button id="btn-quiz-review-mistakes" class="btn-secondary hidden">📝 Review Mistakes</button>
                 <button id="btn-quiz-retry" class="btn-primary">Try Again</button>
                 <button id="btn-quiz-home" class="btn-secondary">Back to Home</button>
             </div>
