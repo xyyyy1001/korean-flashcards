@@ -117,8 +117,8 @@ const FirebaseSync = {
                 // Compare with local timestamp
                 const localUpdatedAt = parseInt(localStorage.getItem('kf_updated_at') || '0');
 
-                if (cloudUpdatedAt > localUpdatedAt) {
-                    // Cloud is newer — pull
+                if (localUpdatedAt === 0 || cloudUpdatedAt > localUpdatedAt) {
+                    // First sync or cloud is newer — pull
                     if (data.cards) localStorage.setItem('kf_cards', data.cards);
                     if (data.stats) localStorage.setItem('kf_stats', data.stats);
                     if (data.settings) localStorage.setItem('kf_settings', data.settings);

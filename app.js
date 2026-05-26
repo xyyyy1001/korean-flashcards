@@ -83,7 +83,7 @@
         let cards = Storage.getCards();
 
         if (cards.length === 0) {
-            // First time — initialize from vocabulary data
+            // First time — initialize from vocabulary data (don't trigger sync)
             cards = [];
             for (const deck of VOCABULARY_DATA.decks) {
                 for (const cardData of deck.cards) {
@@ -99,7 +99,8 @@
                     });
                 }
             }
-            Storage.saveCards(cards);
+            // Save without triggering cloud sync
+            Storage.save(Storage.KEY_CARDS, cards);
         }
 
         state.allCards = cards;
