@@ -131,15 +131,19 @@ const FirebaseSync = {
                     }
                 } else {
                     // Local is newer — push
+                    this.syncInProgress = false;
                     await this.pushToCloud();
+                    return;
                 }
             } else {
                 // No cloud data — push local data up
+                this.syncInProgress = false;
                 await this.pushToCloud();
+                return;
             }
         } catch (error) {
             console.error('Pull error:', error);
-            this.setStatus('✗ Load failed');
+            this.setStatus('✗ Load failed: ' + error.message);
         } finally {
             this.syncInProgress = false;
         }
