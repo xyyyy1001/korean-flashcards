@@ -1501,16 +1501,26 @@
                     }
                 }
 
-                // Merge: add cards that don't already exist
+                // Merge: add cards that don't already exist (match by id or korean text)
                 const existingIds = new Set(state.allCards.map(c => c.id));
+                const existingKorean = new Map(state.allCards.map(c => [c.korean.toLowerCase(), c]));
                 let addedCount = 0;
                 let updatedCount = 0;
 
                 for (const card of data.cards) {
                     if (existingIds.has(card.id)) {
-                        // Update existing card's SRS data
+                        // Update existing card by ID
                         const idx = state.allCards.findIndex(c => c.id === card.id);
                         if (idx !== -1) {
+                            state.allCards[idx] = card;
+                            updatedCount++;
+                        }
+                    } else if (existingKorean.has(card.korean.toLowerCase())) {
+                        // Same Korean text exists — update it with imported data
+                        const existing = existingKorean.get(card.korean.toLowerCase());
+                        const idx = state.allCards.findIndex(c => c.id === existing.id);
+                        if (idx !== -1) {
+                            card.id = existing.id; // keep existing ID
                             state.allCards[idx] = card;
                             updatedCount++;
                         }
