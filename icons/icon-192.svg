@@ -1,6 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="40" fill="#1a1a2e"/>
-  <rect x="30" y="40" width="132" height="112" rx="16" fill="#0f3460" stroke="#e94560" stroke-width="3"/>
-  <text x="96" y="105" text-anchor="middle" font-family="sans-serif" font-size="48" font-weight="bold" fill="#ffffff">한국</text>
-  <text x="96" y="135" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#a0a0b0">Korean</text>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#91A8D0"/>
+      <stop offset="100%" stop-color="#F7CAC9"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="44" fill="url(#bg)"/>
+  <!-- Card shape -->
+  <rect x="36" y="44" width="120" height="104" rx="16" fill="white" opacity="0.95"/>
+  <!-- Small sparkles -->
+  <circle cx="42" cy="38" r="4" fill="#fff" opacity="0.8"/>
+  <circle cx="155" cy="148" r="3" fill="#fff" opacity="0.7"/>
+  <circle cx="160" cy="36" r="2.5" fill="#fff" opacity="0.6"/>
+  <!-- Heart accent -->
+  <path d="M148 28c-2-4-7-5-10-2l-2 2-2-2c-3-3-8-2-10 2-2 4 0 8 4 12l8 7 8-7c4-4 6-8 4-12z" fill="#F7CAC9"/>
+  <!-- Korean text -->
+  <text x="96" y="100" text-anchor="middle" font-family="sans-serif" font-size="36" font-weight="bold" fill="#4a4e69">한국어</text>
+  <!-- Subtext -->
+  <text x="96" y="130" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#91A8D0" font-weight="600">Korean</text>
+  <!-- Star -->
+  <path d="M32 155l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" fill="#FFD700" opacity="0.9"/>
 </svg>
