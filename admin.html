@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Korean Flashcards - Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #2b2d42;
+            color: #edf2f4;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { margin-bottom: 8px; color: #91A8D0; }
+        .subtitle { color: #8d99ae; margin-bottom: 24px; font-size: 0.9rem; }
+        .auth-section { margin-bottom: 24px; }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-primary { background: #91A8D0; color: #2b2d42; }
+        .btn-danger { background: #ff6b6b; color: white; }
+        .btn-success { background: #4ecdc4; color: #2b2d42; }
+        .btn:disabled { opacity: 0.5; cursor: default; }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            color: #8d99ae;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #4a4e69;
+            border-radius: 8px;
+            background: #3d405b;
+            color: #edf2f4;
+            font-size: 0.95rem;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #91A8D0;
+        }
+        .card-form {
+            background: #3d405b;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #4a4e69;
+            margin-bottom: 20px;
+        }
+        .status {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            display: none;
+        }
+        .status.success { display: block; background: #4ecdc422; color: #4ecdc4; }
+        .status.error { display: block; background: #ff6b6b22; color: #ff6b6b; }
+        .card-list {
+            margin-top: 24px;
+        }
+        .card-item {
+            background: #4a4e69;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-item .card-info {
+            flex: 1;
+        }
+        .card-item .korean { font-weight: 700; font-size: 1.1rem; }
+        .card-item .english { color: #8d99ae; font-size: 0.85rem; }
+        .card-item .deck-tag {
+            font-size: 0.7rem;
+            background: #91A8D033;
+            color: #91A8D0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        .btn-delete {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 4px 8px;
+        }
+        .user-info {
+            font-size: 0.85rem;
+            color: #8d99ae;
+            margin-bottom: 12px;
+        }
+        .hidden { display: none; }
+        .count { color: #8d99ae; font-size: 0.85rem; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Admin Panel</h1>
+        <p class="subtitle">Manage global cards shared with all users</p>
+
+        <div class="auth-section">
+            <div id="auth-signed-out">
+                <button class="btn btn-primary" id="btn-sign-in">Sign in with Google</button>
+            </div>
+            <div id="auth-signed-in" class="hidden">
+                <p class="user-info">Signed in as: <strong id="user-name"></strong></p>
+                <button class="btn btn-danger" id="btn-sign-out" style="font-size:0.8rem; padding:6px 12px;">Sign Out</button>
+            </div>
+        </div>
+
+        <div id="admin-content" class="hidden">
+            <div class="card-form">
+                <h3 style="margin-bottom:16px; color: #F7CAC9;">Add New Card</h3>
+                <div class="form-group">
+                    <label>Korean *</label>
+                    <input type="text" id="input-korean" placeholder="e.g. 사랑">
+                </div>
+                <div class="form-group">
+                    <label>English *</label>
+                    <input type="text" id="input-english" placeholder="e.g. Love">
+                </div>
+                <div class="form-group">
+                    <label>Romanization</label>
+                    <input type="text" id="input-romanization" placeholder="e.g. sarang">
+                </div>
+                <div class="form-group">
+                    <label>Example Sentence</label>
+                    <input type="text" id="input-example" placeholder="e.g. 사랑해요.">
+                </div>
+                <div class="form-group">
+                    <label>Deck Name</label>
+                    <input type="text" id="input-deck" placeholder="e.g. Emotions" value="Global">
+                </div>
+                <button class="btn btn-success" id="btn-add-card">Add Card</button>
+                <div id="status" class="status"></div>
+            </div>
+
+            <div class="card-list">
+                <h3 style="margin-bottom:8px;">Global Cards</h3>
+                <p class="count" id="card-count"></p>
+                <div id="cards-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDGpM10sHseMklVrypLFWZh_YuTrc-qCY0",
+            authDomain: "korean-flashcards-7a078.firebaseapp.com",
+            projectId: "korean-flashcards-7a078",
+            storageBucket: "korean-flashcards-7a078.firebasestorage.app",
+            messagingSenderId: "881377079698",
+            appId: "1:881377079698:web:78ce4f162b1d8b6739114b"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // YOUR admin UID — set this after first sign-in
+        const ADMIN_UID = '';
+
+        // Auth
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('auth-signed-out').classList.add('hidden');
+                document.getElementById('auth-signed-in').classList.remove('hidden');
+                document.getElementById('user-name').textContent = user.displayName || user.email;
+
+                if (ADMIN_UID && user.uid !== ADMIN_UID) {
+                    document.getElementById('admin-content').classList.add('hidden');
+                    showStatus('Access denied. Your UID: ' + user.uid, 'error');
+                } else {
+                    document.getElementById('admin-content').classList.remove('hidden');
+                    if (!ADMIN_UID) {
+                        showStatus('Set ADMIN_UID to: ' + user.uid, 'success');
+                    }
+                    loadCards();
+                }
+            } else {
+                document.getElementById('auth-signed-out').classList.remove('hidden');
+                document.getElementById('auth-signed-in').classList.add('hidden');
+                document.getElementById('admin-content').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('btn-sign-in').addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider);
+        });
+
+        document.getElementById('btn-sign-out').addEventListener('click', () => {
+            auth.signOut();
+        });
+
+        // Add card
+        document.getElementById('btn-add-card').addEventListener('click', async () => {
+            const korean = document.getElementById('input-korean').value.trim();
+            const english = document.getElementById('input-english').value.trim();
+            const romanization = document.getElementById('input-romanization').value.trim();
+            const example = document.getElementById('input-example').value.trim();
+            const deckName = document.getElementById('input-deck').value.trim() || 'Global';
+            const deckId = deckName.toLowerCase().replace(/\s+/g, '-');
+
+            if (!korean || !english) {
+                showStatus('Korean and English are required.', 'error');
+                return;
+            }
+
+            try {
+                await db.collection('globalCards').add({
+                    korean,
+                    english,
+                    romanization,
+                    example,
+                    deckId,
+                    deckName,
+                    addedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+                showStatus(`Added: ${korean} → ${english}`, 'success');
+                document.getElementById('input-korean').value = '';
+                document.getElementById('input-english').value = '';
+                document.getElementById('input-romanization').value = '';
+                document.getElementById('input-example').value = '';
+                loadCards();
+            } catch (err) {
+                showStatus('Error: ' + err.message, 'error');
+            }
+        });
+
+        // Load existing global cards
+        async function loadCards() {
+            const snapshot = await db.collection('globalCards').orderBy('addedAt', 'desc').get();
+            const container = document.getElementById('cards-container');
+            document.getElementById('card-count').textContent = snapshot.size + ' cards';
+
+            if (snapshot.empty) {
+                container.innerHTML = '<p style="color:#8d99ae;">No global cards yet.</p>';
+                return;
+            }
+
+            container.innerHTML = snapshot.docs.map(doc => {
+                const d = doc.data();
+                return `<div class="card-item">
+                    <div class="card-info">
+                        <div class="korean">${escapeHtml(d.korean)}</div>
+                        <div class="english">${escapeHtml(d.english)}${d.romanization ? ' (' + escapeHtml(d.romanization) + ')' : ''}</div>
+                        <span class="deck-tag">${escapeHtml(d.deckName || 'Global')}</span>
+                    </div>
+                    <button class="btn-delete" onclick="deleteCard('${doc.id}')" title="Delete">×</button>
+                </div>`;
+            }).join('');
+        }
+
+        async function deleteCard(id) {
+            if (!confirm('Delete this card?')) return;
+            await db.collection('globalCards').doc(id).delete();
+            loadCards();
+        }
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('status');
+            el.textContent = msg;
+            el.className = 'status ' + type;
+            setTimeout(() => { el.className = 'status'; }, 5000);
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

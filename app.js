@@ -77,6 +77,40 @@
         updateHomeStats();
         bindEvents();
         showScreen('screen-home');
+        fetchAndMergeGlobalCards();
+    }
+
+    async function fetchAndMergeGlobalCards() {
+        if (typeof FirebaseSync === 'undefined') return;
+        const globalCards = await FirebaseSync.fetchGlobalCards();
+        if (globalCards.length === 0) return;
+
+        let cards = Storage.getCards();
+        let added = 0;
+
+        for (const gc of globalCards) {
+            // Skip if already exists (match by korean text)
+            const exists = cards.some(c => c.korean.toLowerCase() === gc.korean.toLowerCase());
+            if (exists) continue;
+
+            cards.push({
+                id: generateId(),
+                deckId: gc.deckId || 'global',
+                deckName: gc.deckName || 'Global',
+                korean: gc.korean,
+                english: gc.english,
+                romanization: gc.romanization || '',
+                example: gc.example || '',
+                ...SRS.defaults,
+            });
+            added++;
+        }
+
+        if (added > 0) {
+            Storage.save(Storage.KEY_CARDS, cards);
+            state.allCards = cards;
+            updateHomeStats();
+        }
     }
 
     function loadOrInitializeCards() {

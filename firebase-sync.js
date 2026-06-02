@@ -183,6 +183,18 @@ const FirebaseSync = {
                 this.pushToCloud();
             }
         }, 3000);
+    },
+
+    // Fetch global cards shared across all users
+    async fetchGlobalCards() {
+        try {
+            const snapshot = await db.collection('globalCards').get();
+            if (snapshot.empty) return [];
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error('Failed to fetch global cards:', error);
+            return [];
+        }
     }
 };
 
