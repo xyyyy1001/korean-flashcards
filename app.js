@@ -321,6 +321,9 @@
             stats.streak = 1;
         }
         stats.lastStudyDate = today;
+        if (stats.streak > (stats.bestStreak || 0)) {
+            stats.bestStreak = stats.streak;
+        }
         Storage.saveStats(stats);
     }
 
@@ -1455,6 +1458,7 @@
             <div class="stats-card">
                 <h3>Study Streak</h3>
                 <div class="value">${stats.streak} days</div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px;">🏆 Best: ${stats.bestStreak || stats.streak} days</div>
             </div>
             ${renderCalendar(stats.studyDates)}
             <div class="stats-card">
