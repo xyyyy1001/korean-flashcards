@@ -1339,34 +1339,42 @@
     }
 
     // ==================== Stats Screen ====================
+    // Calendar state for month navigation
+    let calendarMonth = new Date().getMonth();
+    let calendarYear = new Date().getFullYear();
+
     function renderCalendar(studyDates) {
         const today = new Date();
-        const year = today.getFullYear();
-        const month = today.getMonth();
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const monthName = today.toLocaleString('default', { month: 'long', year: 'numeric' });
-
         const dates = studyDates || [];
 
+        const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
+        const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+        const monthName = new Date(calendarYear, calendarMonth).toLocaleString('default', { month: 'long', year: 'numeric' });
+
+        // Determine if we can go prev/next
+        const canPrev = calendarYear > 2026 || (calendarYear === 2026 && calendarMonth > 4);
+        const canNext = calendarYear < today.getFullYear() || (calendarYear === today.getFullYear() && calendarMonth < today.getMonth());
+
         let html = `<div class="stats-card">
-            <h3>📅 ${monthName}</h3>
+            <div class="cal-nav">
+                <button class="cal-nav-btn" id="cal-prev" ${!canPrev ? 'disabled' : ''}>‹</button>
+                <h3>📅 ${monthName}</h3>
+                <button class="cal-nav-btn" id="cal-next" ${!canNext ? 'disabled' : ''}>›</button>
+            </div>
             <div class="calendar">
                 <div class="cal-header">
                     <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
                 </div>
                 <div class="cal-grid">`;
 
-        // Empty cells for days before the 1st
         for (let i = 0; i < firstDay; i++) {
             html += `<span class="cal-day empty"></span>`;
         }
 
-        // Days of the month
         for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const isStudied = dates.includes(dateStr);
-            const isToday = d === today.getDate();
+            const isToday = (d === today.getDate() && calendarMonth === today.getMonth() && calendarYear === today.getFullYear());
             let classes = 'cal-day';
             if (isStudied) classes += ' studied';
             if (isToday) classes += ' today';
@@ -1377,7 +1385,39 @@
         return html;
     }
 
+    function setupCalendarNav() {
+        const prevBtn = document.getElementById('cal-prev');
+        const nextBtn = document.getElementById('cal-next');
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                calendarMonth--;
+                if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
+                updateCalendarDisplay();
+            });
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                calendarMonth++;
+                if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
+                updateCalendarDisplay();
+            });
+        }
+    }
+
+    function updateCalendarDisplay() {
+        const stats = Storage.getStats();
+        const calendarCard = document.querySelector('.cal-nav')?.closest('.stats-card');
+        if (calendarCard) {
+            calendarCard.outerHTML = renderCalendar(stats.studyDates);
+            setupCalendarNav();
+        }
+    }
+
     function showStats() {
+        // Reset calendar to current month
+        calendarMonth = new Date().getMonth();
+        calendarYear = new Date().getFullYear();
+
         const stats = Storage.getStats();
         const cards = state.allCards;
         const totalCards = cards.length;
@@ -1447,6 +1487,9 @@
         `;
 
         showScreen('screen-stats');
+
+        // Setup calendar navigation
+        setupCalendarNav();
 
         // Bind info buttons
         document.getElementById('info-progress').addEventListener('click', () => {
