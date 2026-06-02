@@ -182,6 +182,9 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // Handle redirect result (for PWA/iOS)
+        auth.getRedirectResult().catch(err => console.error('Redirect error:', err));
+
         // YOUR admin UID — set this after first sign-in
         const ADMIN_UID = '';
 
@@ -209,9 +212,15 @@
             }
         });
 
-        document.getElementById('btn-sign-in').addEventListener('click', () => {
+        document.getElementById('btn-sign-in').addEventListener('click', async () => {
             const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider);
+            try {
+                await auth.signInWithPopup(provider);
+            } catch (error) {
+                if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
+                    await auth.signInWithRedirect(provider);
+                }
+            }
         });
 
         document.getElementById('btn-sign-out').addEventListener('click', () => {
